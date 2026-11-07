@@ -118,6 +118,7 @@ struct rtty {
     bool registered;
     bool reconnect;
 #ifdef SSL_SUPPORT
+    struct ev_idle ssl_read_idle;
     struct ssl_context *ssl_ctx;
     bool insecure;
     bool ssl_negotiated;

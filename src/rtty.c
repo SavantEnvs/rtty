@@ -160,6 +160,8 @@ void rtty_exit(struct rtty *rtty)
     }
 
 #ifdef SSL_SUPPORT
+    ev_idle_stop(rtty->loop, &rtty->ssl_read_idle);
+
     if (rtty->ssl) {
         ssl_session_free(rtty->ssl);
         rtty->ssl_negotiated = false;
@@ -501,9 +503,14 @@ static void on_net_read(struct ev_loop *loop, struct ev_io *w, int revents)
                 return;
         }
 
-        ret = buffer_put_fd_ex(&rtty->rb, w->fd, -1, &eof, rtty_ssl_read, rtty);
+        ret = buffer_put_fd_ex(&rtty->rb, w->fd, 4096, &eof, rtty_ssl_read, rtty);
         if (ret < 0)
             goto err;
+
+        if (ret > 0)
+            ev_idle_start(loop, &rtty->ssl_read_idle);
+        else
+            ev_idle_stop(loop, &rtty->ssl_read_idle);
 #endif
     } else {
         ret = buffer_put_fd(&rtty->rb, w->fd, 4096, &eof);
@@ -526,6 +533,15 @@ static void on_net_read(struct ev_loop *loop, struct ev_io *w, int revents)
 err:
     rtty_exit(rtty);
 }
+
+#ifdef SSL_SUPPORT
+static void on_ssl_read_idle(struct ev_loop *loop, struct ev_idle *w, int revents)
+{
+    struct rtty *rtty = container_of(w, struct rtty, ssl_read_idle);
+
+    on_net_read(loop, &rtty->ior, revents);
+}
+#endif
 
 static void on_net_write(struct ev_loop *loop, struct ev_io *w, int revents)
 {
@@ -595,6 +611,8 @@ static void on_net_connected(int sock, void *arg)
 
     if (rtty->ssl_on) {
 #ifdef SSL_SUPPORT
+        ev_idle_init(&rtty->ssl_read_idle, on_ssl_read_idle);
+
         rtty->ssl = ssl_session_new(rtty->ssl_ctx, sock);
         if (!rtty->ssl) {
             log_err("SSL session create fail\n");
