@@ -1,0 +1,4 @@
+[rtty]
+reconnect=On
+verbose=0
+background=YES

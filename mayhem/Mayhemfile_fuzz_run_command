@@ -1,0 +1,9 @@
+project: savantenvs/rtty
+target: fuzz_run_command
+testsuite:
+  - https://$MAYHEM_DOMAIN/$MAYHEM_PROJECT/$MAYHEM_TARGET/testsuite.tar
+  - file://mayhem/fuzz_run_command/testsuite
+cmds:
+  - cmd: /mayhem/fuzz_run_command
+    libfuzzer: true
+    timeout: 30

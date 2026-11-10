@@ -1,0 +1,13 @@
+[rtty]
+group=lab
+id=router-1
+host=rtty.example.org
+port=5912
+description=Lab router
+token=abc123
+username=root
+heartbeat=30
+http-timeout=30
+reconnect=true
+verbose=false
+background=no
